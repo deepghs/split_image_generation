@@ -3,6 +3,7 @@ import random
 import uuid
 
 import yaml
+from hfutils.index import tar_cache_reset, hf_tar_cache_reset
 
 from generation.gene.random import random_one
 from generation.utils import parallel_call
@@ -11,6 +12,8 @@ splits = ['train', 'test', 'valid']
 rts = [0.7, 0.1, 0.2]
 
 if __name__ == '__main__':
+    hf_tar_cache_reset(10000)
+    tar_cache_reset(10000)
     dst_dir = os.environ.get('DST_DIR', '/nfs/box_v0')
 
     meta_file = os.path.join(dst_dir, 'data.yaml')
