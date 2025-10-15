@@ -244,7 +244,7 @@ def create_transform(
         >>> transform = create_transform(hue=0.1, num_ops=2, magnitude=5)
         >>> augmented_image = transform(original_image)
     """
-    trans = Compose([
+    return Compose([
         ColorJitter(
             brightness=0.0,  # Fixed value
             contrast=0.0,  # Fixed value
@@ -275,4 +275,38 @@ def create_transform(
         ),
     ])
 
-    return trans
+
+def create_transform_with_fixed_size(
+        hue: float = 0.2,
+        num_ops: int = 4,
+        magnitude: int = 8,
+        horizontal_flip_p: float = 0.5,
+        vertical_flip_p: float = 0.5,
+        rotation_p: float = 0.3,
+        size: Optional[Tuple[int, int]] = (640, 640),
+        scale: Optional[Tuple[float, float]] = (0.5, 1.0),
+        ratio: Optional[Tuple[float, float]] = (0.8, 1.2)
+):
+    return Compose([
+        ColorJitter(
+            brightness=0.0,  # Fixed value
+            contrast=0.0,  # Fixed value
+            saturation=0.0,  # Fixed value
+            hue=hue,
+        ),
+        MyRandAugment(num_ops=num_ops, magnitude=magnitude),
+        RandomHorizontalFlip(p=horizontal_flip_p),
+        RandomVerticalFlip(p=vertical_flip_p),
+        RandomApply([
+            RandomChoice([
+                RandomRotation(degrees=(90, 90), expand=True),  # Fixed value
+                RandomRotation(degrees=(180, 180), expand=True),  # Fixed value
+                RandomRotation(degrees=(270, 270), expand=True),  # Fixed value
+            ])
+        ], p=rotation_p),
+        RandomResizedCrop(
+            size=size,
+            scale=scale,
+            ratio=ratio,
+        ),
+    ])
