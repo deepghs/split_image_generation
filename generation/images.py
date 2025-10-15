@@ -4,7 +4,7 @@ from pprint import pprint
 import numpy as np
 from huggingface_hub import hf_hub_download
 
-from .pool import _get_from_raw_ids
+from .site import get_images_from_site
 
 _DEFAULT_MODEL_NAME = 'SwinV2_v3_danbooru_8005009_4GB'
 
@@ -18,10 +18,10 @@ def _get_image_ids(model_name: str = _DEFAULT_MODEL_NAME):
     ))
 
 
-def _get_random_images(count: int = 10, model_name: str = _DEFAULT_MODEL_NAME):
+def get_random_images(count: int = 10, model_name: str = _DEFAULT_MODEL_NAME, max_workers: int = 16):
     image_ids = np.random.choice(_get_image_ids(model_name), count)
-    return _get_from_raw_ids(image_ids)
+    return get_images_from_site(image_ids, max_workers=max_workers)
 
 
 if __name__ == '__main__':
-    pprint(_get_random_images())
+    pprint(get_random_images())
