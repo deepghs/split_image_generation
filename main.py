@@ -52,5 +52,6 @@ if __name__ == '__main__':
     parallel_call(
         range(10000),
         fn=_fn,
-        desc='Making Dataset'
+        desc='Making Dataset',
+        max_workers=64,
     )
