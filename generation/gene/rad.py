@@ -1,16 +1,15 @@
+import logging
 import math
 import random
 from typing import List
 
 import numpy as np
 from PIL import Image
-from imgutils.detect import detection_visualize
-from imgutils.resource import random_bg_image
 from rectpack import newPacker
-from torchvision.transforms import RandomResizedCrop
 
-from generation.trans import create_transform
+from .background import create_background
 from ..images import get_random_images
+from ..trans import create_transform
 
 
 def rad_generation_with_images(images: List[Image.Image], area_expand: float = 1.0):
@@ -35,21 +34,12 @@ def rad_generation_with_images(images: List[Image.Image], area_expand: float = 1
 
         all_rectangles = packer.rect_list()
         if len(all_rectangles) < len(images):
-            print(f'Pack failed {len(all_rectangles)}/{len(images)}')
+            logging.warning(f'Pack failed {len(all_rectangles)}/{len(images)}, try again')
         else:
             break
 
     # 创建一个新的空白图像
-    if random.random() < 0.3:
-        random_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-        canvas = Image.new('RGB', (canvas_width, canvas_height), color=random_color)
-    else:
-        canvas = RandomResizedCrop(
-            size=(canvas_height, canvas_width),
-            scale=(0.5, 1.0),
-            ratio=(0.8, 1.2),
-        )(random_bg_image())
-    assert canvas.size == (canvas_width, canvas_height)
+    canvas = create_background(canvas_width, canvas_height)
     bboxes = []
 
     max_x1, max_y1 = 0, 0
@@ -91,12 +81,14 @@ def rad_generation(count: int, area_expand: float = 1.0, max_workers: int = 16):
 
 
 def rad(area_expand: float = 1.0, max_workers: int = 16):
-    count = int(round(2 ** np.random.normal(3.5, 1.2)))
+    count = int(round(2 ** np.random.normal(4, 1.3)))
+    count = max(min(count, 75), 2)
     return rad_generation(count, area_expand=area_expand, max_workers=max_workers)
 
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
+    from imgutils.detect import detection_visualize
 
     canvas, bboxes = rad()
     plt.imshow(detection_visualize(canvas, bboxes))
