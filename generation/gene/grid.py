@@ -67,7 +67,10 @@ def grid_random(
 
 
 def grid():
-    nx, ny = random.randint(1, 10), random.randint(1, 10)
+    while True:
+        nx, ny = random.randint(1, 10), random.randint(1, 10)
+        if nx * ny != 1:
+            break
     return grid_random(
         nx, ny,
     )
@@ -99,7 +102,10 @@ def grid_avg(
         interval = min(interval, int_max)
     interval = int(interval)
 
-    nx, ny = random.randint(1, 10), random.randint(1, 10)
+    while True:
+        nx, ny = random.randint(1, 10), random.randint(1, 10)
+        if nx * ny != 1:
+            break
     return grid_random(
         nx, ny,
         width_mean=width, width_std=0, width_min=None, width_max=None,
