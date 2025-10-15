@@ -3,15 +3,15 @@ import random
 import uuid
 
 import yaml
-from tqdm import tqdm
 
 from generation.gene.random import random_one
+from generation.utils import parallel_call
 
 splits = ['train', 'test', 'valid']
 rts = [0.7, 0.1, 0.2]
 
 if __name__ == '__main__':
-    dst_dir = os.environ.get('DST_DIR', '/data/box_v0')
+    dst_dir = os.environ.get('DST_DIR', '/nfs/box_v0')
 
     meta_file = os.path.join(dst_dir, 'data.yaml')
     os.makedirs(os.path.dirname(meta_file), exist_ok=True)
@@ -25,7 +25,8 @@ if __name__ == '__main__':
             'names': ['box'],
         }, f)
 
-    for _ in tqdm(range(10000)):
+
+    def _fn(_):
         id_ = uuid.uuid4().hex
         split_name = random.choices(splits, weights=rts, k=1)[0]
         image, usable_bboxes = random_one()
@@ -43,3 +44,10 @@ if __name__ == '__main__':
                 r_cx, r_cy = cx / image.width, cy / image.height
                 r_width, r_height = width / image.width, height / image.height
                 print(f'0 {r_cx} {r_cy} {r_width} {r_height}', file=f)
+
+
+    parallel_call(
+        range(10000),
+        fn=_fn,
+        desc='Making Dataset'
+    )
