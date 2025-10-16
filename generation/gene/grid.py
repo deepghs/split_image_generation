@@ -13,6 +13,8 @@ def grid_random(
         width_mean: int = 360, width_std: int = 90, width_min: Optional[int] = 66, width_max: Optional[int] = None,
         height_mean: int = 360, height_std: int = 90, height_min: Optional[int] = 66, height_max: Optional[int] = None,
         int_mean: int = 25, int_std: int = 12, int_min: Optional[int] = 0, int_max: Optional[int] = None,
+        prob_last_drop: float = 0.4,
+        ld_mean: int = 4, ld_std: int = 2, ld_min: Optional[int] = 1, ld_max: Optional[int] = None,
 ):
     def _get_width():
         width = np.random.normal(width_mean, width_std)
@@ -38,6 +40,17 @@ def grid_random(
             interval = min(interval, int_max)
         return int(interval)
 
+    if random.random() < prob_last_drop:
+        last_drop = np.random.normal(ld_mean, ld_std)
+        if ld_min is not None:
+            last_drop = max(last_drop, ld_min)
+        if ld_max is not None:
+            last_drop = min(last_drop, ld_max)
+        last_drop = int(round(last_drop))
+        last_drop = max(min(last_drop, nx * ny - 1), 0)
+    else:
+        last_drop = 0
+
     widths = np.array([_get_width() for _ in range(nx)])
     heights = np.array([_get_height() for _ in range(ny)])
     x_intervals = np.array([_get_interval() for _ in range(nx + 1)])
@@ -53,15 +66,17 @@ def grid_random(
     raw_images = np.array(raw_images, dtype=object).reshape(nx, ny)
     for i in range(nx):
         for j in range(ny):
-            image = raw_images[i, j]
-            width, height = widths[i].item(), heights[j].item()
-            x0 = x_intervals[:i + 1].sum().item() + widths[:i].sum().item()
-            y0 = y_intervals[:j + 1].sum().item() + heights[:j].sum().item()
-            x1, y1 = x0 + width, y0 + height
-            image = create_transform_with_fixed_size(size=(height, width))(image)
-            assert image.size == (width, height)
-            canvas.paste(image, (x0, y0))
-            bboxes.append(((x0, y0, x1, y1), 'box', 1.0))
+            id_ = i * ny + j
+            if id_ + last_drop < nx * ny:
+                image = raw_images[i, j]
+                width, height = widths[i].item(), heights[j].item()
+                x0 = x_intervals[:i + 1].sum().item() + widths[:i].sum().item()
+                y0 = y_intervals[:j + 1].sum().item() + heights[:j].sum().item()
+                x1, y1 = x0 + width, y0 + height
+                image = create_transform_with_fixed_size(size=(height, width))(image)
+                assert image.size == (width, height)
+                canvas.paste(image, (x0, y0))
+                bboxes.append(((x0, y0, x1, y1), 'box', 1.0))
 
     return canvas, bboxes
 
@@ -122,7 +137,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from imgutils.detect import detection_visualize
 
-    # canvas, bboxes = grid_random(3, 4)
     canvas, bboxes = grid_zero()
+    # canvas, bboxes = grid_zero()
     plt.imshow(detection_visualize(canvas, bboxes))
     plt.show()
