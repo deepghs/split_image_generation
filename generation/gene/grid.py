@@ -2,7 +2,9 @@ import random
 from typing import Optional
 
 import numpy as np
+from PIL import Image
 
+from generation.gene.inpaint import inpaint_unpasted_regions
 from .background import create_background
 from ..images import get_random_images
 from ..trans import create_transform_with_fixed_size
@@ -15,6 +17,7 @@ def grid_random(
         int_mean: int = 25, int_std: int = 12, int_min: Optional[int] = 0, int_max: Optional[int] = None,
         prob_last_drop: float = 0.4,
         ld_mean: int = 4, ld_std: int = 2, ld_min: Optional[int] = 1, ld_max: Optional[int] = None,
+        use_inpaint: bool = False, inpaint_radius: int = 5,
 ):
     def _get_width():
         width = np.random.normal(width_mean, width_std)
@@ -58,8 +61,13 @@ def grid_random(
 
     canvas_width = (widths.sum() + x_intervals.sum()).item()
     canvas_height = (heights.sum() + y_intervals.sum()).item()
-    canvas = create_background(canvas_width, canvas_height)
+    if use_inpaint:
+        canvas = Image.new('RGB', (canvas_width, canvas_height), color='white')
+    else:
+        canvas = create_background(canvas_width, canvas_height)
     bboxes = []
+    pasted_positions = []
+    pasted_images = []
 
     raw_images = get_random_images(count=nx * ny)
     assert len(raw_images) == nx * ny
@@ -76,8 +84,11 @@ def grid_random(
                 image = create_transform_with_fixed_size(size=(height, width))(image)
                 assert image.size == (width, height)
                 canvas.paste(image, (x0, y0))
+                pasted_positions.append((x0, y0))
+                pasted_images.append(image)
                 bboxes.append(((x0, y0, x1, y1), 'box', 1.0))
 
+    canvas = inpaint_unpasted_regions(canvas, pasted_positions, pasted_images, inpaint_radius=inpaint_radius)
     return canvas, bboxes
 
 
@@ -137,7 +148,8 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from imgutils.detect import detection_visualize
 
-    canvas, bboxes = grid_zero()
     # canvas, bboxes = grid_zero()
+    # canvas, bboxes = grid_zero()
+    canvas, bboxes = grid_random(3, 3, use_inpaint=True)
     plt.imshow(detection_visualize(canvas, bboxes))
     plt.show()
