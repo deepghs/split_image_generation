@@ -79,7 +79,8 @@ def rad_generation_with_images(images: List[Image.Image], area_expand: float = 1
         pasted_positions.append((x0, y0))
         pasted_images.append(img)
 
-    canvas = inpaint_unpasted_regions(canvas, pasted_positions, pasted_images, inpaint_radius=inpaint_radius)
+    if use_inpaint:
+        canvas = inpaint_unpasted_regions(canvas, pasted_positions, pasted_images, inpaint_radius=inpaint_radius)
     return canvas, bboxes
 
 
@@ -97,10 +98,24 @@ def rad(area_expand: float = 1.0, max_workers: int = 16):
     return rad_generation(count, area_expand=area_expand, max_workers=max_workers)
 
 
+def rad_with_inpaint(area_expand: float = 1.0, max_workers: int = 16,
+                     inp_e2_mean: float = 2.5, inp_e2_std: float = 1.2, inp_min: int = 1, inp_max: int = 30):
+    count = int(round(2 ** np.random.normal(4, 1.3)))
+    count = max(min(count, 75), 2)
+    inpaint_radius = int(min(max(2 ** np.random.normal(inp_e2_mean, inp_e2_std), inp_min), inp_max))
+    return rad_generation(
+        count,
+        area_expand=area_expand,
+        max_workers=max_workers,
+        use_inpaint=True,
+        inpaint_radius=inpaint_radius,
+    )
+
+
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from imgutils.detect import detection_visualize
 
-    canvas, bboxes = rad_generation(12, use_inpaint=True)
+    canvas, bboxes = rad_with_inpaint()
     plt.imshow(detection_visualize(canvas, bboxes))
     plt.show()

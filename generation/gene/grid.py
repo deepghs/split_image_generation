@@ -88,7 +88,8 @@ def grid_random(
                 pasted_images.append(image)
                 bboxes.append(((x0, y0, x1, y1), 'box', 1.0))
 
-    canvas = inpaint_unpasted_regions(canvas, pasted_positions, pasted_images, inpaint_radius=inpaint_radius)
+    if use_inpaint:
+        canvas = inpaint_unpasted_regions(canvas, pasted_positions, pasted_images, inpaint_radius=inpaint_radius)
     return canvas, bboxes
 
 
@@ -144,12 +145,69 @@ def grid_zero():
     return grid_avg(int_mean=0, int_std=0)
 
 
+def grid_with_inpaint(inp_e2_mean: float = 2.5, inp_e2_std: float = 1.2, inp_min: int = 1, inp_max: int = 30):
+    while True:
+        nx, ny = random.randint(1, 10), random.randint(1, 10)
+        if nx * ny != 1:
+            break
+    inpaint_radius = int(min(max(2 ** np.random.normal(inp_e2_mean, inp_e2_std), inp_min), inp_max))
+    return grid_random(
+        nx, ny,
+        use_inpaint=True,
+        inpaint_radius=inpaint_radius,
+    )
+
+
+def grid_avg_with_inpaint(
+        width_mean: int = 360, width_std: int = 90, width_min: Optional[int] = 66, width_max: Optional[int] = None,
+        height_mean: int = 360, height_std: int = 90, height_min: Optional[int] = 66, height_max: Optional[int] = None,
+        int_mean: int = 25, int_std: int = 12, int_min: Optional[int] = 0, int_max: Optional[int] = None,
+        inp_e2_mean: float = 2.5, inp_e2_std: float = 1.2, inp_min: int = 1, inp_max: int = 30
+):
+    width = np.random.normal(width_mean, width_std)
+    if width_min is not None:
+        width = max(width, width_min)
+    if width_max is not None:
+        width = min(width, width_max)
+    width = int(width)
+
+    height = np.random.normal(height_mean, height_std)
+    if height_min is not None:
+        height = max(height, height_min)
+    if height_max is not None:
+        height = min(height, height_max)
+    height = int(height)
+
+    interval = np.random.normal(int_mean, int_std)
+    if int_min is not None:
+        interval = max(interval, int_min)
+    if int_max is not None:
+        interval = min(interval, int_max)
+    interval = int(interval)
+
+    while True:
+        nx, ny = random.randint(1, 10), random.randint(1, 10)
+        if nx * ny != 1:
+            break
+
+    inpaint_radius = int(min(max(2 ** np.random.normal(inp_e2_mean, inp_e2_std), inp_min), inp_max))
+    return grid_random(
+        nx, ny,
+        width_mean=width, width_std=0, width_min=None, width_max=None,
+        height_mean=height, height_std=0, height_min=None, height_max=None,
+        int_mean=interval, int_std=0, int_min=None, int_max=None,
+        use_inpaint=True,
+        inpaint_radius=inpaint_radius,
+    )
+
+
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from imgutils.detect import detection_visualize
 
     # canvas, bboxes = grid_zero()
     # canvas, bboxes = grid_zero()
-    canvas, bboxes = grid_random(3, 3, use_inpaint=True)
+    # canvas, bboxes = grid_random(3, 3, use_inpaint=True)
+    canvas, bboxes = grid_with_inpaint()
     plt.imshow(detection_visualize(canvas, bboxes))
     plt.show()

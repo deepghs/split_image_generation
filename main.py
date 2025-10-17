@@ -5,7 +5,7 @@ import uuid
 import yaml
 from hfutils.index import tar_cache_reset, hf_tar_cache_reset
 
-from generation.gene.random import random_one
+from generation.gene.random import random_c
 from generation.utils import parallel_call
 
 splits = ['train', 'test', 'valid']
@@ -15,6 +15,7 @@ if __name__ == '__main__':
     hf_tar_cache_reset(10000)
     tar_cache_reset(10000)
     dst_dir = os.environ.get('DST_DIR', '/nfs/box_v0')
+    method = os.environ.get('METHOD', 'one')
 
     meta_file = os.path.join(dst_dir, 'data.yaml')
     os.makedirs(os.path.dirname(meta_file), exist_ok=True)
@@ -32,7 +33,7 @@ if __name__ == '__main__':
     def _fn(_):
         id_ = uuid.uuid4().hex
         split_name = random.choices(splits, weights=rts, k=1)[0]
-        image, usable_bboxes = random_one()
+        image, usable_bboxes = random_c(method)
 
         dst_image_file = os.path.join(dst_dir, split_name, 'images', f'{id_}.jpg')
         os.makedirs(os.path.dirname(dst_image_file), exist_ok=True)
